@@ -1,54 +1,74 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Entities;
 using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
 
 namespace Infrastructure.Data
 {
-    public class ProductRepository : IProductRepository
+    public class ProductRepository(StoreContext context) : IProductRepository
     {
-        private readonly StoreContext _context;
-        public ProductRepository(StoreContext context)
+        public void AddProduct(Product product)
         {
-            _context = context;
+            context.Products.Add(product);
+        }
+
+        public void DeleteProduct(Product product)
+        {
+            context.Products.Remove(product);
         }
 
         public async Task<IReadOnlyList<ProductBrand>> GetProductBrandsAsync()
         {
-            return await _context.ProductBrands.ToListAsync();
+            return await context.ProductBrands.ToListAsync();
         }
 
-        public async Task<ProductBrand> GetProductBrandByIdAsync(Guid id)
+        public async Task<Product?> GetProductByIdAsync(Guid id)
         {
-            return await _context.ProductBrands.FindAsync(id);
+            return await context.Products.FindAsync(id);
         }
 
-        public async Task<Product> GetProductByIdAsync(Guid id)
+        public async Task<IReadOnlyList<Product>> GetProductsAsync(Guid? brandId, Guid? typeId, string? sort)
         {
-            return await _context.Products
-                    .Include(p => p.ProductType)
-                    .FirstOrDefaultAsync(p => p.Id == id);
-        }
+            var query = context.Products.AsQueryable();
 
-        public async Task<IReadOnlyList<Product>> GetProductsAsync()
-        {
-            return await _context.Products
-                .Include(p => p.ProductType)
-                .ToListAsync();
+            if (!(brandId is null || brandId == Guid.Empty))
+                query = query.Where(x => x.ProductBrandId == brandId);
+
+            if (!(typeId is null || typeId == Guid.Empty))
+                query = query.Where(x => x.ProductTypeId == typeId);
+
+            query = sort switch
+            {
+                "priceAsc" => query.OrderBy(x => x.Price),
+                "priceDesc" => query.OrderByDescending(x => x.Price),
+                _ => query.OrderBy(x => x.Name)
+            };
+
+            return await query.ToListAsync();
         }
 
         public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync()
         {
-            return await _context.ProductTypes.ToListAsync();
+            return await context.ProductTypes.ToListAsync();
         }
 
-        public async Task<ProductType> GetProductTypeByIdAsync(Guid id)
+        public bool ProductExist(Guid id)
         {
-            return await _context.ProductTypes.FindAsync(id);
+            return context.Products.Any(x => x.Id == id);
+        }
+
+        public async Task<bool> SaveChangesAsync()
+        {
+            return await context.SaveChangesAsync() > 0;
+        }
+
+        public void UpdateProduct(Product product)
+        {
+            context.Entry(product).State = EntityState.Modified;
         }
     }
 }

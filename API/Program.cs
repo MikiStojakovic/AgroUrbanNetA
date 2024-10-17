@@ -1,12 +1,5 @@
-using System.Linq;
-using API.Errors;
-using API.Extensions;
-using API.Helpers;
-using API.Middleware;
 using Core.Interfaces;
-using Infrastructure;
 using Infrastructure.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,28 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.AddSwaggerDocumentation();
 builder.Services.AddDbContext<Infrastructure.Data.StoreContext>(opt => {
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
-builder.AddApplicationServices();
-builder.Services.AddAutoMapper(typeof(MappingProfiles).Assembly);
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 var app = builder.Build();
 
-
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerDocumentation();
-}
-
-app.UseMiddleware<ExceptionMiddleware>();
-app.UseStatusCodePagesWithReExecute("/errors/{0}");
-
-app.UseStaticFiles();
-app.UseAuthorization();
-
 app.MapControllers();
 
 using var scope = app.Services.CreateScope();
@@ -47,7 +27,7 @@ try
 {
     var context = services.GetRequiredService<StoreContext>();
     await context.Database.MigrateAsync();
-    await Seed.SeedDataAsync(context);
+    await StoreDataSeed.SeedDataAsync(context);
 }
 catch (System.Exception ex)
 {

@@ -1,64 +1,96 @@
-using Infrastructure.Data;
+using API.RequestHelpers;
 using Core.Entities;
-using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Core.Specifications;
-using API.Dtos;
-using AutoMapper;
-using API.Errors;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
-    public class ProductsController : BaseApiController
+    public class ProductsController(IGenericRepository<Product> repository) : BaseApiController
     {
-        private readonly IGenericRepository<Product> _productRepo;
-        private readonly IGenericRepository<ProductBrand> _productBrandRepo;
-        private readonly IGenericRepository<ProductType> _productTypeRepo;
-        private readonly IMapper _mapper;
-
-        public ProductsController(IGenericRepository<Product> productRepo, IGenericRepository<ProductBrand> productBrandRepo, 
-            IGenericRepository<ProductType> productTypeRepo, IMapper mapper)
-        {
-            _mapper = mapper;
-            _productRepo = productRepo;
-            _productBrandRepo = productBrandRepo;
-            _productTypeRepo = productTypeRepo;
-        }
-
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetProducts(string sort, Guid? brandId, Guid? typeId)
+        public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts([FromQuery]ProductSpecParams prodParams)
         {
-            var spec = new ProductsWithTypesAndBrandsSpecification(sort, brandId, typeId);
-            var products = await _productRepo.ListAsync(spec);
-
-            return Ok(_mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductDto>>(products));
+            var specification = new ProductSpecification(prodParams);
+            
+            return await CreatedPagedResult(repository, specification, prodParams.PageIndex, prodParams.PageSize);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ProductDto>> GetProduct(Guid id)
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<Product>> GetProduct(Guid id)
         {
-            var spec = new ProductsWithTypesAndBrandsSpecification(id);
-            var product = await _productRepo.GetEntityWithSpec(spec);
+            var product = await repository.GetByIdAsync(id);
 
-            if (product == null) return NotFound(new ApiResponse(404));
+            if (product == null) return NotFound();  
 
-            return Ok(_mapper.Map<Product, ProductDto>(product));
+            return product; 
+        }
+        
+        [HttpPost]
+        public async Task<ActionResult<Product>> CreateProduct(Product product)
+        {
+            repository.Add(product);
+
+            if (await repository.SaveAllAsync())
+            {
+                return CreatedAtAction("GetProduct", new { id = product.Id}, product);
+            }
+
+            return BadRequest("Problem creating product");
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult> UpdateProduct(Guid id, Product product)
+        {
+            if (product.Id != id || !ProductExist(id))
+                return BadRequest("Cannot update this product");
+
+            repository.Update(product);
+
+            if (await repository.SaveAllAsync())
+            {
+                return NoContent();
+            }
+
+            return BadRequest("Problem updating the product");
+        }
+
+        [HttpDelete("{id:Guid}")]
+        public async Task<ActionResult> DeleteProduct(Guid id)
+        {
+            var product = await repository.GetByIdAsync(id);
+
+            if (product == null) return NotFound();
+
+            repository.Delete(product);
+
+            if (await repository.SaveAllAsync())
+            {
+                return NoContent();
+            }
+
+            return BadRequest("Problem deleting the product");
+        }
+
+        private bool ProductExist(Guid id)
+        {
+            return repository.Exists(id);
         }
 
         [HttpGet("brands")]
         public async Task<ActionResult<IReadOnlyList<ProductBrand>>> GetProductBrands()
         {
-            var result = await _productBrandRepo.ListAllAsync();
+            var specification = new BrandSpecification();
 
-            return Ok(result);
+            return Ok(await repository.ListAsync(specification));
         }
 
         [HttpGet("types")]
         public async Task<ActionResult<IReadOnlyList<ProductBrand>>> GetProductTypes()
         {
-            var result = await _productTypeRepo.ListAllAsync();
+            var specification = new TypeSpecification();
 
-            return Ok(result);
+            return Ok(await repository.ListAsync(specification));
         }
     }
 }

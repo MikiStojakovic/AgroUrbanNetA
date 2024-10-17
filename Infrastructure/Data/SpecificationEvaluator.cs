@@ -1,42 +1,75 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Core.Entities;
-using Core.Specifications;
-using Microsoft.EntityFrameworkCore;
+using Core.Interfaces;
 
 namespace Infrastructure.Data
 {
-    public class SpecificationEvaluator<TEntity> where TEntity : BaseEntity
+    public class SpecificationEvaluator<T> where T : BaseEntity
     {
-        public static IQueryable<TEntity> GetQuery(IQueryable<TEntity> inputQuery, ISpecification<TEntity> spec)
+        public static IQueryable<T> GetQuery(IQueryable<T> query, ISpecification<T> specification)
         {
-            var query = inputQuery;
-
-            if (spec.Criteria != null)
+            if (specification.Criteria != null)
             {
-                query = query.Where(spec.Criteria);
+                query = query.Where(specification.Criteria);
             }
 
-            if (spec.OrderBy != null)
+            if (specification.OrderBy != null)
             {
-                query = query.OrderBy(spec.OrderBy);
+                query = query.OrderBy(specification.OrderBy);
             }
 
-            if (spec.OrderByDescending != null)
+            if (specification.OrderByDescending != null)
             {
-                query = query.OrderByDescending(spec.OrderByDescending);
+                query = query.OrderByDescending(specification.OrderByDescending);
             }
 
-            if (spec.IsPagingEnabled)
+            if (specification.IsDistinct)
             {
-                query = query.Skip(spec.Skip).Take(spec.Take);
+                query = query.Distinct();
             }
 
-            query = spec.Includes.Aggregate(query, (current, include) => current.Include(include));
+            if (specification.IsPagingEnabled)
+            {
+                query = query.Skip(specification.Skip).Take(specification.Take);
+            }
 
             return query;
+        }
+
+        public static IQueryable<TResult> GetQuery<TSpecification, TResult>(IQueryable<T> query, ISpecification<T, TResult> specification)
+        {
+            if (specification.Criteria != null)
+            {
+                query = query.Where(specification.Criteria);
+            }
+
+            if (specification.OrderBy != null)
+            {
+                query = query.OrderBy(specification.OrderBy);
+            }
+
+            if (specification.OrderByDescending != null)
+            {
+                query = query.OrderByDescending(specification.OrderByDescending);
+            }
+
+            var selectQuery = query as IQueryable<TResult>;
+
+            if (specification.Select != null)
+            {
+                selectQuery = query.Select(specification.Select);
+            }
+
+            if (specification.IsDistinct)
+            {
+                selectQuery = selectQuery?.Distinct();
+            }
+
+            if (specification.IsPagingEnabled)
+            {
+                selectQuery = selectQuery?.Skip(specification.Skip).Take(specification.Take);
+            }
+
+            return selectQuery ?? query.Cast<TResult>();
         }
     }
 }
