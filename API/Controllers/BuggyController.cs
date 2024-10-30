@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using API.DTOs;
-using Core.Entities;
 using Microsoft.AspNetCore.Mvc;
+using RateLimiter.Attributes;
 
 namespace API.Controllers
 {
@@ -32,6 +28,7 @@ namespace API.Controllers
         {
             throw new Exception("This is a test exception");
         }
+        [RateLimit(5, 2)]
         [HttpPost("validationerror")]
         public IActionResult GetValidationError(ProductDto product)
         {
