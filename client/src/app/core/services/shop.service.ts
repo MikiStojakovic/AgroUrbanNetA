@@ -4,6 +4,7 @@ import { Product } from '../../shared/models/product';
 import { Pagination } from '../../shared/pagination';
 import { ProductType } from '../../shared/models/productType';
 import { ProductBrand } from '../../shared/models/productBrand';
+import { ShopParams } from '../../shared/models/shopParams';
 
 @Injectable({
   providedIn: 'root'
@@ -14,14 +15,18 @@ export class ShopService {
   types: ProductType[] = [];
   brands: ProductBrand[] = [];
 
-  getProducts(brands?: ProductBrand[], types?: ProductType[]) {
+  getProducts(shopParams: ShopParams) {
     let params = new HttpParams();
-    if (brands && brands.length > 0) {
-      params = params.append('brands', brands.map(b => b.id).join(','));
+    if (shopParams.brands.length > 0) {
+      params = params.append('brands', shopParams.brands.map(b => b.id).join(','));
     }
 
-    if (types && types.length > 0) {
-      params = params.append('types', types.map(t => t.id).join(','));
+    if (shopParams.types.length > 0) {
+      params = params.append('types', shopParams.types.map(t => t.id).join(','));
+    }
+
+    if (shopParams.sort) {
+      params = params.append('sort', shopParams.sort);
     }
 
     params = params.append('pageSize', 12);
