@@ -9,6 +9,10 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { ProductBrand } from '../../shared/models/productBrand';
 import { ProductType } from '../../shared/models/productType';
+import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
+import { MatListOption, MatSelectionList, MatSelectionListChange } from '@angular/material/list';
+import { MatSelectChange } from '@angular/material/select';
+import { ShopParams } from '../../shared/models/shopParams';
 
 @Component({
   selector: 'app-shop',
@@ -17,7 +21,11 @@ import { ProductType } from '../../shared/models/productType';
     MatCard,
     ProductItemComponent,
     MatButton,
-    MatIcon
+    MatIcon,
+    MatMenu,
+    MatSelectionList,
+    MatListOption,
+    MatMenuTrigger
 ],
   templateUrl: './shop.component.html',
   styleUrl: './shop.component.scss'
@@ -26,8 +34,12 @@ export class ShopComponent implements OnInit {
   private shopService = inject(ShopService);
   private dialogService = inject(MatDialog);
   products: Product[] = [];
-  selectedBrands: ProductBrand[] = [];
-  selectedTypes: ProductType[] = [];
+  sortOptions = [
+    {name: 'Alphabetical', value: 'name'},
+    {name: 'Price: Low-To-High', value: 'priceAsc'},
+    {name: 'Price: High-To-Low', value: 'priceDesc'}
+  ]
+  shopParams = new ShopParams();
   
   ngOnInit(): void {
     this.initializeShop();
@@ -36,29 +48,38 @@ export class ShopComponent implements OnInit {
   initializeShop() {
     this.shopService.getBrands();
     this.shopService.getTypes();
-    this.shopService.getProducts().subscribe({
+    this.getProducts();
+  }
+
+  getProducts() {
+    this.shopService.getProducts(this.shopParams).subscribe({
       next: response => this.products = response.data,
       error: error => console.log(error)
     })
+  }
+
+  onSortChange(event: MatSelectionListChange) {
+    const selectedOption = event.options[0];
+    if (selectedOption) {
+      this.shopParams.sort = selectedOption.value;
+      this.getProducts();
+    }
   }
 
   openFiltersDialog() {
     const dialogRef = this.dialogService.open(FiltersDialogComponent, {
       minWidth: '500px',
       data: {
-        selectedBrands: this.selectedBrands,
-        selectedTypes: this.selectedTypes
+        selectedBrands: this.shopParams.brands,
+        selectedTypes: this.shopParams.types
       }
     });
     dialogRef.afterClosed().subscribe({
       next: result => {
         if (result) {
-          this.selectedBrands = result.selectedBrands;
-          this.selectedTypes = result.selectedTypes;
-          this.shopService.getProducts(this.selectedBrands, this.selectedTypes).subscribe({
-            next: response => this.products = response.data,
-            error: error => console.log(error)
-          })
+          this.shopParams.brands = result.selectedBrands;
+          this.shopParams.types = result.selectedTypes;
+          this.getProducts();
         }
       }
     })
