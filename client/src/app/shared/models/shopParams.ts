@@ -5,7 +5,7 @@ export class ShopParams {
     brands: ProductBrand[] = [];
     types: ProductType[] = [];
     sort = "name";
-    pageNumber = 1;
+    pageIndex = 1;
     pageSize = 6;
     search = '';
  }
