@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Product } from '../../shared/models/product';
 import { Pagination } from '../../shared/pagination';
@@ -14,8 +14,19 @@ export class ShopService {
   types: ProductType[] = [];
   brands: ProductBrand[] = [];
 
-  getProducts() {
-    return this.http.get<Pagination<Product>>(this.baseUrl + 'products?pageSize=12');
+  getProducts(brands?: ProductBrand[], types?: ProductType[]) {
+    let params = new HttpParams();
+    if (brands && brands.length > 0) {
+      params = params.append('brands', brands.map(b => b.id).join(','));
+    }
+
+    if (types && types.length > 0) {
+      params = params.append('types', types.map(t => t.id).join(','));
+    }
+
+    params = params.append('pageSize', 12);
+
+    return this.http.get<Pagination<Product>>(this.baseUrl + 'products', {params});
   }
 
   getTypes() {

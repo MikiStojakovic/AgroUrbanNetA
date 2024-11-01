@@ -6,6 +6,7 @@ import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ProductBrand } from '../../../shared/models/productBrand';
 import { ProductType } from '../../../shared/models/productType';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-filters-dialog',
@@ -14,7 +15,8 @@ import { ProductType } from '../../../shared/models/productType';
     MatDivider,
     MatSelectionList,
     MatListOption,
-    MatButton
+    MatButton,
+    FormsModule
   ],
   templateUrl: './filters-dialog.component.html',
   styleUrl: './filters-dialog.component.scss'
