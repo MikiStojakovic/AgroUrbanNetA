@@ -8,7 +8,7 @@ namespace Core.Entities
 {
     public class ShoppingCart
     {
-        public required string Id { get; set; }
+        public required Guid Id { get; set; }
         public List<CartItem> Items { get; set; } = [];
     }
 }
