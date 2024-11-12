@@ -1,8 +1,8 @@
 import { CartItem } from "./cartItem";
 import { CartType } from "./cartType";
-import { nanoid } from "nanoid";
+import { GuidGeneratorService } from "../../core/services/guid-generator.service";
 
 export class Cart implements CartType {
-    id = nanoid();
+    id = GuidGeneratorService.newGuid();
     items: CartItem[] = [];
 }
