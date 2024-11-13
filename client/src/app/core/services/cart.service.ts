@@ -16,6 +16,19 @@ export class CartService {
   itemCount = computed(() => {
     return this.cart()?.items.reduce((sum, item) => sum + item.quantity, 0)
   })
+  totals = computed(() => {
+    const cart = this.cart();
+    if (!cart) return null;
+    const subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const shipping = 0;
+    const discount = 0;
+    return {
+      subtotal,
+      shipping,
+      discount,
+      total: subtotal + shipping - discount
+    }
+  })
   
   getCart(id: string) {
     return this.http.get<Cart>(this.baseUrl + 'cart?id=' + id).pipe(
@@ -44,6 +57,10 @@ export class CartService {
   private addOrUpdateItem(items: CartItem[], item: CartItem, quantity: number): CartItem[] {
     const index = items.findIndex(x => x.productId === item.productId);
     if (index === -1) {
+      if (item.quantity == 0){
+        item.quantity = 1;
+      }
+
       items.push(item);
     } else {
       items[index].quantity += quantity;
