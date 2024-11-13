@@ -45,7 +45,7 @@ export class CartService {
     });
   }
 
-  additemToCart(item: CartItem | Product, quantity = 1) {
+  addItemToCart(item: CartItem | Product, quantity = 1) {
     const cart = this.cart() ?? this.createCart();
     if (this.isProduct(item)) {
       item = this.mapProductToCartItem(item);
