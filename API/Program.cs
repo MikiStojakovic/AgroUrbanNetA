@@ -1,5 +1,6 @@
 using API.Middleware;
 using Core.Interfaces;
+using Identity.Entities;
 using Infrastructure.Data;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(config => {
     return ConnectionMultiplexer.Connect(configuration);
 });
 builder.Services.AddSingleton<ICartService, CartService>();
+builder.Services.AddAuthorization();
+builder.Services.AddIdentityApiEndpoints<AppUser>()
+    .AddEntityFrameworkStores<StoreContext>();
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();
@@ -34,6 +38,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<RateLimitMiddleware>();
 app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200"));
 app.MapControllers();
+app.MapIdentityApi<AppUser>();
 
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
