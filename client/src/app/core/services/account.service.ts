@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { User } from '../../shared/models/user';
+import { Address } from '../../shared/models/address';
 
 @Injectable({
   providedIn: 'root'
@@ -25,5 +26,13 @@ export class AccountService {
     return this.http.get<User>(this.baseUrl + 'account/user-info').subscribe({
       next: user => this.currentUser.set(user)
     })
+  }
+  
+  logout() {
+    return this.http.patch(this.baseUrl + 'account/logout', {});
+  }
+
+  updateAddress(address: Address) {
+    return this.http.post(this.baseUrl + 'account/address', address);
   }
 }
